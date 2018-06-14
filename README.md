@@ -22,8 +22,11 @@ Atualmente, a base de dados conta com 2 imagens da mão esquerda de dois indiví
 ### Visão Geral 
 O sistema deve receber uma imagem da mão de um usuário, capturada com um smartphone.
 Em seguida, a imagem deverá ser convertida para escala de cinza e transformada em uma imagem binária (preto e branco) para diferenciar a mão do fundo da imagem.
+
 O próximo passo é realizar a medição do comprimento e da largura dos dedos. A largura dos dedos é medida em três pontos diferentes: na ponta, no meio e na base. O dedo polegar não é utilizado.
+
 Feita a medição dos dedos, é feita a análise da palma, extraindo sua largura, comprimento e proporção. Ainda, é extraído o comprimento da mão.
+
 Por fim, todos os 20 atributos obtidos (4 de cada dedo, 4 da mão) são unidos em um vetor. Esse vetor é comparado aos vetores previamente extraídos e armazenados. Caso o vetor obtido possua similaridade acima de um determinado threshold com outro vetor, o usuário atual é reconhecido.
 
 ### Métodos Implementados

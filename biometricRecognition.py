@@ -1,5 +1,6 @@
 import numpy as np 
 import imageio
+import cv2
 import math
 import matplotlib.pyplot as plt
 
@@ -96,10 +97,30 @@ def binaryTransform(img, thresholding):
 		for y in range(img.shape[1]):
 			if img[x,y] > thresholding: binImg[x,y] = 1
 
-	plt.imshow(binImg, cmap=plt.get_cmap('gray'))
-	plt.show()
+	imageio.imwrite("bin.jpg", binImg)
 
 	return binImg
+
+# Detects edges of the image
+def edgeDetection(binImg, image):
+
+	# Reads the binary image
+	img = cv2.imread('bin.jpg')
+
+	# Converts to be used in findContours function
+	convertImg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY);
+
+	# Finding contours
+	im2, contours, hierarchy = cv2.findContours(convertImg,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+	
+	# Drawing the contour in the original image
+	cv2.drawContours(image, contours, -1, (0,255,0), 3)
+	
+	# Plots image with contours
+	plt.imshow(image)
+	plt.show()
+
+	return img
 
 def main():
 
@@ -116,6 +137,9 @@ def main():
 
 	# Converts to binary
 	binImg = binaryTransform(gray, thresholding)
+
+	# Edge detection
+	edgeImg = edgeDetection(binImg, image)
 
 if __name__ == "__main__":
 	main()

@@ -33,11 +33,11 @@ Por fim, todos os 20 atributos obtidos (4 de cada dedo, 4 da mão) são unidos e
 #### Pré Processamento
 * Transformação da imagem de RGB para escala de cinza
 * Thresholding e conversão para imagem binária pelo algoritmo de Otsu
-
-### Métodos Não Implementados
-#### Pré Processamento
 * Eliminação de braço e outros ruídos no background
 * Recorte de regiões sem conteúdo
+* Segmentação da mão (extração dos dedos e da palma)
+
+### Métodos Não Implementados
 #### Extração de Atributos
 * Extração de atributos dos dedos
 * Extração de atributos das palmas
@@ -47,7 +47,6 @@ Por fim, todos os 20 atributos obtidos (4 de cada dedo, 4 da mão) são unidos e
 
 ## Próximas Etapas
 * Expandir dataset para pelo menos 5 imagens de 15 indivíduos.
-* Finalizar implementação dos métodos de pré processamento
 * Implementação dos métodos de extração de atributos
 * Implementação dos métodos de comparação
 

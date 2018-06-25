@@ -104,23 +104,29 @@ def binaryTransform(img, thresholding):
 # Detects edges of the image
 def edgeDetection(binImg, image):
 
-	# Reads the binary image
-	img = cv2.imread('bin.jpg')
-
-	# Converts to be used in findContours function
-	convertImg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY);
-
-	# Finding contours
-	im2, contours, hierarchy = cv2.findContours(convertImg,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-	
-	# Drawing the contour in the original image
-	cv2.drawContours(image, contours, -1, (0,255,0), 3)
-	
-	# Plots image with contours
-	plt.imshow(image)
-	plt.show()
-
-	return img
+	# Reads binary image
+    binary = binImg.astype(np.uint8)
+    
+    # Reads the original image
+    img = image.astype(np.uint8)
+    
+    # Finding contours
+    im2, contours, hierarchy = cv2.findContours(binary,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Only the hand edge is left
+    new_contours = []
+    for c in contours:
+        if cv2.contourArea(c) > 100000:
+            new_contours.append(c)
+            
+    # Drawing the contour in the original image
+    cv2.drawContours(img, new_contours, -1, (0,255,0), 3)
+    
+    # Plots image with contours
+    plt.imshow(img)
+    plt.show()
+    
+    return img
 
 def main():
 

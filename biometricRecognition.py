@@ -209,7 +209,7 @@ def removeArm(fingers_mask, fingers_img):
     
     # Showing Plots
     plt.tight_layout()
-    plt.show()
+ #   plt.show()
     
     # Removes Contour with smallest with minimum Bouding Rectangle height (arm)
     min_h = float('inf')
@@ -246,7 +246,7 @@ def removeArm(fingers_mask, fingers_img):
         
     # Showing Plots
     plt.tight_layout()
-    plt.show()
+#    plt.show()
     
     # Creating new fingers_mask and fingers_image
     new_mask = np.zeros_like(fingers_mask)
@@ -308,98 +308,119 @@ def isolateFingers(fingers_mask, fingers_image, contours):
         
     #returns a list containing each finger tuple(mask, image, contour)
     return [(mask, image, contour) for mask, image, contour in zip(fingers_masks, fingers_images, contours)]
-    
+
+def fingersMeasure(fingers):
+
+    fing_measure = []
+
+    for finger, i in zip( fingers, range(1, len(fingers) + 1) ):
+        
+        fing_mask, fing_image, fing_contour = finger
+        
+        # Finds the fingers contours
+        im2, contours, hierarchy = cv2.findContours(fing_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+        # Calculating the bounding box
+        x, y, height, width = cv2.boundingRect(contours[0])
+        
+        # Adds to array
+        fing_measure.append((height, width))
+
+    return fing_measure
+
 def main():
 
-	filename = str(input("Digite o nome do arquivo: ")).rstrip()
+    filename = str(input("Digite o nome do arquivo: ")).rstrip()
 
-	# Open the original image
-	image = imageio.imread(filename)
+    # Open the original image
+    image = imageio.imread(filename)
 
-	# Converts to gray scale
-	gray = grayTransform(image).astype(int)
+    # Converts to gray scale
+    gray = grayTransform(image).astype(int)
 
-	# Optimal thresholding
-	thresholding = otsuThresholding(gray)
+    # Optimal thresholding
+    thresholding = otsuThresholding(gray)
 
-	# Converts to binary
-	binImg = binaryTransform(gray, thresholding)
+    # Converts to binary
+    binImg = binaryTransform(gray, thresholding)
 
-	# Edge detection
-	res = edgeDetection(binImg, image)
-	plt.subplot(121)
-	plt.title('Mask')
-	plt.imshow(res[1], cmap='gray')
+    # Edge detection
+    res = edgeDetection(binImg, image)
+    '''plt.subplot(121)
+    plt.title('Mask')
+    plt.imshow(res[1], cmap='gray')
 
-	plt.subplot(122)
-	plt.title('Result')
-	plt.imshow(res[0])
+    plt.subplot(122)
+    plt.title('Result')
+    plt.imshow(res[0])
 
-	plt.show()
+    plt.show()'''
 
-	fingers_mask, fingers_image, palm_mask, palm_image = cutFingersPalm(image, res[1], res[2], res[3])
-	plt.subplot(221)
-	plt.title('Fingers Mask')
-	plt.imshow(fingers_mask, cmap='gray')
+    fingers_mask, fingers_image, palm_mask, palm_image = cutFingersPalm(image, res[1], res[2], res[3])
+    '''plt.subplot(221)
+    plt.title('Fingers Mask')
+    plt.imshow(fingers_mask, cmap='gray')
 
-	plt.subplot(222)
-	plt.title('Fingers Image')
-	plt.imshow(fingers_image, cmap='gray')
+    plt.subplot(222)
+    plt.title('Fingers Image')
+    plt.imshow(fingers_image, cmap='gray')
 
-	plt.subplot(223)
-	plt.title('Palm Mask')
-	plt.imshow(palm_mask, cmap='gray')
+    plt.subplot(223)
+    plt.title('Palm Mask')
+    plt.imshow(palm_mask, cmap='gray')
 
-	plt.subplot(224)
-	plt.title('Palm Img')
-	plt.imshow(palm_image, cmap='gray')
+    plt.subplot(224)
+    plt.title('Palm Img')
+    plt.imshow(palm_image, cmap='gray')
 
-	plt.tight_layout()
-	plt.show()
+    plt.tight_layout()
+    plt.show()'''
 
-	new_mask, new_image, contours = removeArm(fingers_mask, fingers_image)
+    new_mask, new_image, contours = removeArm(fingers_mask, fingers_image)
 
-	# Plotting stuff
-	plt.figure('Result:')
-	plt.subplot(1,2,1)
-	plt.imshow(new_mask, cmap='gray')
-	plt.subplot(1,2,2)
-	plt.imshow(new_image, cmap='gray')
-	plt.tight_layout()
-	plt.show()
+    # Plotting stuff
+    '''plt.figure('Result:')
+    plt.subplot(1,2,1)
+    plt.imshow(new_mask, cmap='gray')
+    plt.subplot(1,2,2)
+    plt.imshow(new_image, cmap='gray')
+    plt.tight_layout()
+    plt.show()'''
 
-	print(len(contours))
+    print(len(contours))
 
-	new_mask, new_image, contours = removeArm(fingers_mask, fingers_image)
+    new_mask, new_image, contours = removeArm(fingers_mask, fingers_image)
 
-	# Plotting stuff
-	plt.figure('Result:')
-	plt.subplot(1,2,1)
-	plt.imshow(new_mask, cmap='gray')
-	plt.subplot(1,2,2)
-	plt.imshow(new_image, cmap='gray')
-	plt.tight_layout()
-	plt.show()
+    # Plotting stuff
+    '''plt.figure('Result:')
+    plt.subplot(1,2,1)
+    plt.imshow(new_mask, cmap='gray')
+    plt.subplot(1,2,2)
+    plt.imshow(new_image, cmap='gray')
+    plt.tight_layout()
+    plt.show()'''
 
-	print(len(contours))
-	fingers = isolateFingers(new_mask, new_image, contours)
+    print(len(contours))
+    fingers = isolateFingers(new_mask, new_image, contours)
 
-	# Plotting results
-	plt.figure('Resultados: Dedos Isolados e suas Máscaras Binárias', dpi=150)
-	for finger, i in zip( fingers, range(1, len(fingers) + 1) ):
-	    
-	    fing_mask, fing_image, fing_contour = finger
-	    
-	    plt.subplot(2,4,i)
-	    plt.title('Finger {0} Image'.format(i))
-	    plt.imshow(fing_image, cmap='gray')
-	    
-	    plt.subplot(2,4,i + 4)
-	    plt.title('Finger {0} Mask'.format(i))
-	    plt.imshow(fing_mask, cmap='gray')
-	    
-	plt.tight_layout()
-	plt.show()
+    # Plotting results
+    plt.figure('Resultados: Dedos Isolados e suas Máscaras Binárias', dpi=150)
+    for finger, i in zip( fingers, range(1, len(fingers) + 1) ):
+        
+        fing_mask, fing_image, fing_contour = finger
+        
+        plt.subplot(2,4,i)
+        plt.title('Finger {0} Image'.format(i))
+        plt.imshow(fing_image, cmap='gray')
+        
+        plt.subplot(2,4,i + 4)
+        plt.title('Finger {0} Mask'.format(i))
+        plt.imshow(fing_mask, cmap='gray')
+        
+    plt.tight_layout()
+    plt.show()
+
+    fing_measure = fingersMeasure(fingers)
 
 if __name__ == "__main__":
 	main()

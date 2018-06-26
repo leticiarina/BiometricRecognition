@@ -309,24 +309,15 @@ def isolateFingers(fingers_mask, fingers_image, contours):
     #returns a list containing each finger tuple(mask, image, contour)
     return [(mask, image, contour) for mask, image, contour in zip(fingers_masks, fingers_images, contours)]
 
-def fingersMeasure(fingers):
+def attributeMeasure(attr):
 
-    fing_measure = []
+    # Finds the fingers contours
+    im2, contours, hierarchy = cv2.findContours(attr,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
-    for finger, i in zip( fingers, range(1, len(fingers) + 1) ):
-        
-        fing_mask, fing_image, fing_contour = finger
-        
-        # Finds the fingers contours
-        im2, contours, hierarchy = cv2.findContours(fing_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    # Calculating the bounding box
+    x, y, height, width = cv2.boundingRect(contours[0])
 
-        # Calculating the bounding box
-        x, y, height, width = cv2.boundingRect(contours[0])
-        
-        # Adds to array
-        fing_measure.append((height, width))
-
-    return fing_measure
+    return (height, width)
 
 def main():
 
@@ -405,9 +396,15 @@ def main():
 
     # Plotting results
     plt.figure('Resultados: Dedos Isolados e suas Máscaras Binárias', dpi=150)
+
+    fing_measure = []
+
     for finger, i in zip( fingers, range(1, len(fingers) + 1) ):
         
         fing_mask, fing_image, fing_contour = finger
+
+        # Adds finger measure to array
+        fing_measure.append(attributeMeasure(fing_mask))
         
         plt.subplot(2,4,i)
         plt.title('Finger {0} Image'.format(i))
@@ -420,7 +417,10 @@ def main():
     plt.tight_layout()
     plt.show()
 
-    fing_measure = fingersMeasure(fingers)
+    # Calculates palm and hand measures
+    palm_measure = attributeMeasure(palm_mask)
+
+    print(palm_measure)
 
 if __name__ == "__main__":
 	main()

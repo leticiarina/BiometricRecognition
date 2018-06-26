@@ -3,8 +3,9 @@
 Projeto final da disciplina SCC0251 - Processamento de Imagens, ministrada por Moacir Ponti no primeiro semestre de 2018 para o curso de Ciências da Computação - ICMC/USP.
 
 ## Autores
-Letícia Rina Sakurai (9278010)
-Rafael Augusto Monteiro (9293095)
+[Letícia Rina Sakurai](https://github.com/leticiarina/) (9278010)
+
+[Rafael Augusto Monteiro](https://github.com/RafaelMonteiro95/) (9293095)
 
 ## Projeto
 ### Tema
@@ -20,8 +21,9 @@ Atualmente, a base de dados conta com 2 imagens da mão esquerda de dois indiví
 ## Métodos
 
 ### Visão Geral 
-O sistema deve receber uma imagem da mão de um usuário, capturada com um smartphone.
-Em seguida, a imagem deverá ser convertida para escala de cinza e transformada em uma imagem binária (preto e branco) para diferenciar a mão do fundo da imagem.
+O sistema deve receber uma imagem da mão de um usuário, capturada com um smartphone. Em seguida, a imagem é convertida para escala de cinza e transformada em uma imagem binária (preto e branco) para diferenciar a mão do fundo da imagem.
+
+Obtém-se o contorno da mão, os pontos principais - vãos entre os dedos, detecção da transição entre palma e punho -, que são utilizados para definir a palma da mão e separar os dedos em diferentes máscaras. 
 
 O próximo passo é realizar a medição do comprimento e da largura dos dedos. A largura dos dedos é medida em três pontos diferentes: na ponta, no meio e na base. O dedo polegar não é utilizado.
 

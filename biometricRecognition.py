@@ -426,10 +426,6 @@ Returns:
 """
 def generateDatabase(images_folder='handDatabase', database_filename=None):
     files = os.listdir(images_folder)
-    try:
-        files.remove('notWorking')
-    except:
-        pass
 
     df = pd.DataFrame(columns=indexes)
     for f, i in zip(files, range(len(files))):

@@ -1,7 +1,8 @@
 import numpy as np 
+import pandas as pd
 import imageio
-import cv2
 import math
+import cv2
 import matplotlib.pyplot as plt
 
 # Converts a RGB image to gray scale using colorimetric conversion
@@ -87,31 +88,37 @@ def otsuThresholding(img):
 	# Returns the optimal thresholding
 	return list(intraclassVar).index(minValue)
 
+
 # Converts a grey scale image to binary (only black and white)
 def binaryTransform(img, thresholding):
 
-	binImg = np.zeros(img.shape)
+    binImg = np.zeros(img.shape)
 
-	# Sets image values according to chosen thresholding
-	for x in range(img.shape[0]):
-		for y in range(img.shape[1]):
-			if img[x,y] > thresholding: binImg[x,y] = 1
+    # Sets image values according to chosen thresholding
+    for x in range(img.shape[0]):
+        for y in range(img.shape[1]):
+            if img[x,y] > thresholding: binImg[x,y] = 1
 
-	imageio.imwrite("bin.jpg", binImg)
+    return binImg
 
-	return binImg
-
-# Detects edges of the image
-def edgeDetection(binImg, image):
+"""
+Extracts the biggest object from a binary image with multiple objects
+Parameters:
+    binImg: binary image with multiple objects
+Returns:
+    mask: the binary mask with the biggest object
+    contour: contour points of the biggest object
+"""
+def selectBiggestObject(binImg):
 
     binary = binImg.astype(np.uint8)
-    
+
     # Reads the binary image
     img = image.astype(np.uint8)
-    
+
     # Finding contours
     im2, contours, hierarchy = cv2.findContours(binary,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-    
+
     # Finding the biggest contour
     cnt = None
     cntArea = 0
@@ -119,16 +126,25 @@ def edgeDetection(binImg, image):
         if cv2.contourArea(contours[i]) > cntArea:
             cnt = contours[i]
             cntArea = cv2.contourArea(contours[i])
-    
+
     # Drawing the contour in the original image
     mask = np.zeros_like(binary)
     cv2.drawContours(mask, [cnt], -1, (255), -1)
-#     cv2.drawContours(img, cnt, -1, (0,255,0), 1)
     
+    return (mask, cnt)
+
+"""
+Calculates the convex hull defects of a binary mask with one object
+Parameters:
+    contour: the contour points of the object in the mask
+Returns:
+    defects: the defects found in the convex hull of the object
+"""
+def convexHullDefects(contour):
     #generating convex hull and convexity defects
-    hull = cv2.convexHull(cnt, returnPoints = False)
-    old_defects = cv2.convexityDefects(cnt, hull)
-    
+    hull = cv2.convexHull(contour, returnPoints = False)
+    old_defects = cv2.convexityDefects(contour, hull)
+
     #iterating through defects and checking for defects that are too small
     defects = []
     for i in range(old_defects.shape[0]):
@@ -136,19 +152,22 @@ def edgeDetection(binImg, image):
         # if distance from defect to hull is smaller than 4000, continue
         if d < 4000:
             continue;
-        # drawing the defects and the hull
-#         start = tuple(cnt[s][0])
-#         end = tuple(cnt[e][0])
-        far = tuple(cnt[f][0])
-#         cv2.line(img,start,end,[0,0,255],9)
-        cv2.circle(img,far,20,[255,0,0], 3)
         # adding the big defects to a new array
         defects.append(old_defects[i])
         
-    #returns the original image with everything drawed, the binary mask, the contour of the mask, the convex hull and the convex defects
-    return (img, mask, cnt, np.array(defects))
+    return np.array(defects)
 
-def cutFingersPalm(image, mask, cnt, defects):
+""" 
+Cuts the palm from the binary mask of the hand
+Parameters:
+    mask: binary mask of the hand
+    cnt: contour points of the binary mask
+    defects: convex hull defects of the binary mask contour
+Returns:
+    cut_hand_mask: binary mask without the palm
+    palm_mask: binary mask of the palm cut from mask
+"""
+def cutPalm(mask, cnt, defects):
     img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
     # Finding cut points
@@ -168,48 +187,32 @@ def cutFingersPalm(image, mask, cnt, defects):
     radius = int(radius)
     
     # Cutting hand from fingers_mask
-    fingers_mask = np.copy(mask)
-    cv2.circle(fingers_mask,center,radius,(0),-1)
-    
-    # Cutting fingers from image
-    fingers_image = img*(fingers_mask.astype(image.dtype))
+    cut_hand_mask = np.copy(mask)
+    cv2.circle(cut_hand_mask,center,radius,(0),-1)
     
     # Drawing palm_mask. Palm mask is an AND between the minEnclosingCircle and mask
     palm_mask = np.zeros_like(mask)
     cv2.circle(palm_mask,center,radius,(255),-1)
     palm_mask = cv2.bitwise_and(palm_mask, mask)
     
-    # Cutting the palm from the original image
-    palm_image = img * (palm_mask.astype(image.dtype))
-    
-    return (fingers_mask, fingers_image, palm_mask, palm_image)
+    return (cut_hand_mask, palm_mask)
 
-def removeArm(fingers_mask, fingers_img):
+"""
+Removes the arm and the thumb from the cut_hand_mask
+Parameters:
+    cut_hand_mask: binary mask of the hand with the palm cut
+Returns:
+    five_fingers_mask: mask with all five fingers
+    four_fingers_mask: mask with the four fingers and thumb removed
+"""
+def removeArmThumb(cut_hand_mask):
     
     # Finding contours
-    im2, contours, hierarchy = cv2.findContours(fingers_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    im2, contours, hierarchy = cv2.findContours(cut_hand_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     contours = [c for c in contours if cv2.contourArea(c) > 10000]
     
     # Generates a Bounding Rectangle for each contour
     rects = [cv2.boundingRect(c) for c in contours]
-    
-    # Plotting stuff
-    plt.figure('Before removing Thumb and Arm')
-    for c, r, i in zip(contours, rects, range(1,len(contours)+1)):
-        # Getting Bouding rect coords
-        w, h = r[2:]
-        # Generating a new image for plotting
-        testImage = cv2.cvtColor(fingers_img,cv2.COLOR_GRAY2BGR)
-        # Drawing the finger contour filled with red 
-        cv2.drawContours(testImage, [c], -1, (255,0,0), -1)
-        # creating subplots
-        plt.subplot(2,3,i)
-        plt.title('Box Area: ' + str(w * h) + '\nBox Height: ' + str(h) + '\nBox Width: ' + str(w))
-        plt.imshow(testImage)
-    
-    # Showing Plots
-    plt.tight_layout()
- #   plt.show()
     
     # Removes Contour with smallest with minimum Bouding Rectangle height (arm)
     min_h = float('inf')
@@ -220,6 +223,11 @@ def removeArm(fingers_mask, fingers_img):
             min_h = rects[i][3]
     rects.remove(rects[min_rect])
     contours.remove(contours[min_rect])
+    
+    # generates the five fingers mask
+    five_fingers_mask = np.zeros_like(cut_hand_mask)
+    for c in contours:
+        cv2.drawContours(five_fingers_mask, [c], -1, (255) , -1)
             
     # Removes Contour with biggest Bounding Rectangle area (thumb)
     max_a = float('-inf')
@@ -230,56 +238,42 @@ def removeArm(fingers_mask, fingers_img):
             max_a = (rects[i][3] * rects[i][2])
     rects.remove(rects[min_rect])
     contours.remove(contours[min_rect])
-    
-    # Plotting Stuff
-    plt.figure('After Removing Thumb and Arm')
-    for c, r, i in zip(contours, rects, range(1,len(contours)+1)):
-        # Getting Bouding rect coords
-        w, h = r[2:]
-        # Generating a new image for plotting
-        testImage = cv2.cvtColor(fingers_img,cv2.COLOR_GRAY2BGR)
-        # Drawing the finger contour filled with red 
-        cv2.drawContours(testImage, [c], -1, (255,0,0), -1)
-        # creating subplots
-        plt.subplot(2,2,i)
-        plt.imshow(testImage)
         
-    # Showing Plots
-    plt.tight_layout()
-#    plt.show()
-    
-    # Creating new fingers_mask and fingers_image
-    new_mask = np.zeros_like(fingers_mask)
+    # generates the four fingers mask
+    four_fingers_mask = np.zeros_like(cut_hand_mask)
     for c in contours:
-        cv2.drawContours(new_mask, [c], -1, (255), -1)
-    new_image = fingers_img * (new_mask.astype(fingers_img.dtype))
+        cv2.drawContours(four_fingers_mask, [c], -1, (255), -1)
         
-    return (new_mask, new_image, contours)
+    return (four_fingers_mask, five_fingers_mask)
 
-def isolateFingers(fingers_mask, fingers_image, contours):
+
+"""
+Isolates each finger in the parameter mask into four binary masks,
+cropped to the fingers minimum bounding rectangle and rotated so the finger faces up
+Parameters:
+    fingers_mask: mask with the four fingers that will be split intro separeted masks
+Returns:
+    fingers_masks: an array with 4 elements, each is an image with a finger binary mask
+"""
+def isolateFingers(fingers_mask):
     
-    
+    # Applying morphological opening for thin edges reduction
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
     fingers_mask = cv2.morphologyEx(fingers_mask, cv2.MORPH_OPEN, kernel)
-    fingers_image = fingers_image * (fingers_mask.astype(fingers_image.dtype))
+    
+    #finding new contours after opening
     im2, contours, hierarchy = cv2.findContours(fingers_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     
-    # Fingers holds an image for each finger
     # Fingers_masks contains a binary mask of each finger
-    # Fingers_images contains an grayscale image of each finger
     fingers_masks = []
-    fingers_images = []
     
     for c, i in zip(contours, range(len(contours))):
         
         # Creating the new images
         fingers_masks.append(np.zeros_like(fingers_mask))
-        fingers_images.append(None)
         
         # Drawing finger mask
         cv2.drawContours(fingers_masks[i], [c], -1, (255), -1) 
-        # Drawing finger image
-        fingers_images[i] = fingers_image * (fingers_masks[i].astype(fingers_image.dtype))
         
         # Generating rotated bounding rectangle
         rect = cv2.minAreaRect(c)
@@ -291,136 +285,79 @@ def isolateFingers(fingers_mask, fingers_image, contours):
         
         # Applies rotation to mask and image
         rotated_mask = cv2.warpAffine(fingers_masks[i], rotation_matrix, fingers_masks[i].shape[:2])
-        # Applies rotation
-        rotated_image = cv2.warpAffine(fingers_images[i], rotation_matrix, fingers_images[i].shape[:2])
         
-        # Finding contour
+        # Finding new contour after rotation
         cont = cv2.findContours(rotated_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         
         # Getting new bouding rect
         x, y, w, h = cv2.boundingRect(cont[0])
         
-        # Cropping finger mask and image
+        # Cropping finger mask
         fingers_masks[i] = np.zeros((w,h))
-        fingers_images[i] = np.zeros((w,h))
         fingers_masks[i] = rotated_mask[y:y+h , x:x+w]
-        fingers_images[i] = rotated_image[y:y+h , x:x+w]
         
     #returns a list containing each finger tuple(mask, image, contour)
-    return [(mask, image, contour) for mask, image, contour in zip(fingers_masks, fingers_images, contours)]
+    return fingers_masks
 
-def attributeMeasure(attr):
 
+"""
+Calculates the lenght and width of a finger mask
+Parameters:
+    finger mask: binary mask with a finger image
+Returns:
+    a tuple with height, width of bottom middle and top parts of the finger
+"""
+def fingerMeasure(finger_mask):
+    
     # Finds the fingers contours
-    im2, contours, hierarchy = cv2.findContours(attr,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    im2, contours, hierarchy = cv2.findContours(finger_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
     # Calculating the bounding box
-    x, y, height, width = cv2.boundingRect(contours[0])
+    x, y, width, height = cv2.boundingRect(contours[0])
+    
+    # Bottom width is calculated at the 25% percentile of the height
+    bot_width = np.count_nonzero(finger_mask[int(height * 0.25)])
+    mid_width = np.count_nonzero(finger_mask[int(height * 0.50)])
+    top_width = np.count_nonzero(finger_mask[int(height * 0.75)])
+    
+    return (height, bot_width, mid_width, top_width)
+
+"""
+Calculates the lenght and width of a object within a binary mask
+Parameters:
+    obj_mask: binary mask with the object
+Returns:
+    a tuple with height and width of the object
+"""
+def objMeasure(obj_mask):
+
+    # Finds the fingers contours
+    im2, contours, hierarchy = cv2.findContours(obj_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+    # Calculating the bounding box
+    x, y, width, height = cv2.boundingRect(contours[0])
 
     return (height, width)
 
-def main():
-
-    filename = str(input("Digite o nome do arquivo: ")).rstrip()
-
-    # Open the original image
-    image = imageio.imread(filename)
-
-    # Converts to gray scale
-    gray = grayTransform(image).astype(int)
-
-    # Optimal thresholding
-    thresholding = otsuThresholding(gray)
-
-    # Converts to binary
-    binImg = binaryTransform(gray, thresholding)
-
-    # Edge detection
-    res = edgeDetection(binImg, image)
-    '''plt.subplot(121)
-    plt.title('Mask')
-    plt.imshow(res[1], cmap='gray')
-
-    plt.subplot(122)
-    plt.title('Result')
-    plt.imshow(res[0])
-
-    plt.show()'''
-
-    fingers_mask, fingers_image, palm_mask, palm_image = cutFingersPalm(image, res[1], res[2], res[3])
-    '''plt.subplot(221)
-    plt.title('Fingers Mask')
-    plt.imshow(fingers_mask, cmap='gray')
-
-    plt.subplot(222)
-    plt.title('Fingers Image')
-    plt.imshow(fingers_image, cmap='gray')
-
-    plt.subplot(223)
-    plt.title('Palm Mask')
-    plt.imshow(palm_mask, cmap='gray')
-
-    plt.subplot(224)
-    plt.title('Palm Img')
-    plt.imshow(palm_image, cmap='gray')
-
-    plt.tight_layout()
-    plt.show()'''
-
-    new_mask, new_image, contours = removeArm(fingers_mask, fingers_image)
-
-    # Plotting stuff
-    '''plt.figure('Result:')
-    plt.subplot(1,2,1)
-    plt.imshow(new_mask, cmap='gray')
-    plt.subplot(1,2,2)
-    plt.imshow(new_image, cmap='gray')
-    plt.tight_layout()
-    plt.show()'''
-
-    print(len(contours))
-
-    new_mask, new_image, contours = removeArm(fingers_mask, fingers_image)
-
-    # Plotting stuff
-    '''plt.figure('Result:')
-    plt.subplot(1,2,1)
-    plt.imshow(new_mask, cmap='gray')
-    plt.subplot(1,2,2)
-    plt.imshow(new_image, cmap='gray')
-    plt.tight_layout()
-    plt.show()'''
-
-    print(len(contours))
-    fingers = isolateFingers(new_mask, new_image, contours)
-
-    # Plotting results
-    plt.figure('Resultados: Dedos Isolados e suas Máscaras Binárias', dpi=150)
-
-    fing_measure = []
-
-    for finger, i in zip( fingers, range(1, len(fingers) + 1) ):
-        
-        fing_mask, fing_image, fing_contour = finger
-
-        # Adds finger measure to array
-        fing_measure.append(attributeMeasure(fing_mask))
-        
-        plt.subplot(2,4,i)
-        plt.title('Finger {0} Image'.format(i))
-        plt.imshow(fing_image, cmap='gray')
-        
-        plt.subplot(2,4,i + 4)
-        plt.title('Finger {0} Mask'.format(i))
-        plt.imshow(fing_mask, cmap='gray')
-        
-    plt.tight_layout()
-    plt.show()
-
-    # Calculates palm and hand measures
-    palm_measure = attributeMeasure(palm_mask)
-
-    print(palm_measure)
-
-if __name__ == "__main__":
-	main()
+"""
+Generates a numpy array with the values from palm_measure, hand_measure and fingers_measures
+Parameters:
+    palm_measure: tuple with (heigth, width) of a palm
+    hand_measure: tuple with (heigth, width) of a hand
+    fingers_measures: list of tuples with (heigth, width_bottom, width_middle, width_top) of a finger
+Returns:
+    numpy array with values. The indexes are:
+    'palm_length', 'palm_width', 'hand_length', 'hand_width', 'finger0_length',
+    'finger0_bot_width', 'finger0_mid_width', 'finger0_top_width', 'finger1_length',
+    'finger1_bot_width', 'finger1_mid_width', 'finger1_top_width', 'finger2_length',
+    'finger2_bot_width', 'finger2_mid_width', 'finger2_top_width', 'finger3_length',
+    'finger3_bot_width', 'finger3_mid_width', 'finger3_top_width'
+"""
+def generateAttributesList(palm_measure, hand_measure, fingers_measures):
+    values = [palm_measure[0], palm_measure[1], hand_measure[0], hand_measure[1]]
+    for finger in fingers_measures:
+        values.append(finger[0])
+        values.append(finger[1])
+        values.append(finger[2])
+        values.append(finger[3])
+    return np.array(values)

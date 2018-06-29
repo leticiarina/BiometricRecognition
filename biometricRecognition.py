@@ -361,3 +361,36 @@ def generateAttributesList(palm_measure, hand_measure, fingers_measures):
         values.append(finger[2])
         values.append(finger[3])
     return np.array(values)
+
+
+"""
+Does the whole processing described above for an image
+Parameters:
+    filename: image filename
+Returns:
+    an numpy array with all attributes extracted
+"""
+def processImage(filename);
+    # Opens image, turns image to grayscale
+    gray = grayTransform(imageio.imread(filename)).astype(int)
+    # Applies otsu threshold to create a binary mask for image
+    binImg = binaryTransform(gray, otsuThresholding(gray))
+    # generates a mask and a contour for the object in the binary image
+    mask, contour = selectBiggestObject(binImg)
+    # finds biggest defects in contour convex hull
+    defects = convexHullDefects(contour)
+    # separates the palm from the hand in the binary mask
+    cut_hand_mask, palm_mask = cutPalm(mask, contour, defects)
+    # separates the fingers from the cut hand mask
+    four_fingers_mask, five_fingers_mask = removeArmThumb(cut_hand_mask)
+    # separates each finger in a separate mask and rotates them so all fingers are pointing up
+    fingers_masks = isolateFingers(four_fingers_mask)
+    # calculates all measures for fingers
+    fingers_measures = [fingerMeasure(f) for f in fingers_masks]
+    # calculates all measures for palm
+    palm_measure = objMeasure(palm_mask)
+    # calculates all measures for hand
+    hand_measure = objMeasure(palm_mask + five_fingers_mask)
+
+    #generates a numpy array with all measurements
+    return generateAttributesList(palm_measure, hand_measure, fingers_measures)

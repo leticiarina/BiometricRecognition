@@ -38,6 +38,8 @@ onde <usuário> é o nome de um usuário e <nro_imagem> é um número de 1 a 5. 
 Para realizar o acesso biométrico, o sistema deverá verificar se a imagem fornecida da mão do usuário possui similaridade acima de um determinado threshold com algum dos registros guardados no banco de dados. 
 
 A imagem é convertida para uma forma binária, preto e branca. Em seguida, é feita a segmentação da mão, isolando os componentes mais relevantes. São extraídos e utilizados na comparação 20 atributos:
+
+
 Nro. A. | Nome do Atributo | Nro. A.| Nome do Atributo
 --- | --- | --- | ---  
 1| largura da palma | 11 | largura meio dedo 1
@@ -50,6 +52,7 @@ Nro. A. | Nome do Atributo | Nro. A.| Nome do Atributo
 8| largura ponta dedo 0 | 18 | largura base dedo 3
 9| comprimento dedo 1 | 19 | largura meio dedo 3
 10| largura base dedo 1 | 20 | largura ponta dedo 3
+
 
 Os dedos utilizados são indicador, médio, anelar e mindinho, descartando o dedão. 
 Por fim, é feita a normalização dos valores extraídos pelo comprimento da mão, e as comparações são feitas entre a mão do usuário e as mãos cadastradas no banco de dados. Caso a similaridade entre a mão do usuário e a mão cadastrada no banco de dados seja maior que um limiar previamente calculado para aquele usuário, o usuário é reconhecido.

@@ -334,8 +334,16 @@ def objMeasure(obj_mask):
     # Finds the fingers contours
     im2, contours, hierarchy = cv2.findContours(obj_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
+    # Find biggest contour
+    maxArea = -1
+    maxC = None
+    for c in contours:
+        if(cv2.contourArea(c) > maxArea):
+            maxC = c
+            maxArea = cv2.contourArea(c)
+
     # Calculating the bounding box
-    x, y, width, height = cv2.boundingRect(contours[0])
+    x, y, width, height = cv2.boundingRect(maxC)
 
     return (height, width)
 
@@ -360,8 +368,7 @@ def generateAttributesList(palm_measure, hand_measure, fingers_measures):
         values.append(finger[1])
         values.append(finger[2])
         values.append(finger[3])
-    return np.array(values)
-
+    return values
 
 """
 Does the whole processing described above for an image
@@ -370,7 +377,15 @@ Parameters:
 Returns:
     an numpy array with all attributes extracted
 """
-def processImage(filename);
+def processImage(filename):
+    
+    
+    indexes = ['palm_length', 'palm_width', 'hand_length', 'hand_width', 'finger0_length', 'finger0_bot_width', 'finger0_mid_width', 'finger0_top_width', 'finger1_length', 'finger1_bot_width', 'finger1_mid_width', 'finger1_top_width', 'finger2_length', 'finger2_bot_width', 'finger2_mid_width', 'finger2_top_width', 'finger3_length', 'finger3_bot_width', 'finger3_mid_width', 'finger3_top_width', 'foto_id', 'person']
+    
+    #generates name and 
+    name = filename.split('/')[-1].split('_')[0]
+    photo_id = int(filename.split('/')[-1].split('_')[1].replace('.jpg',''))
+    
     # Opens image, turns image to grayscale
     gray = grayTransform(imageio.imread(filename)).astype(int)
     # Applies otsu threshold to create a binary mask for image
@@ -391,6 +406,36 @@ def processImage(filename);
     palm_measure = objMeasure(palm_mask)
     # calculates all measures for hand
     hand_measure = objMeasure(palm_mask + five_fingers_mask)
+    
+    values = generateAttributesList(palm_measure, hand_measure, fingers_measures)
+    values.append(photo_id)
+    values.append(name)
 
     #generates a numpy array with all measurements
-    return generateAttributesList(palm_measure, hand_measure, fingers_measures)
+    return np.array(values)
+
+"""
+Generates a database_filename.csv file with all images on images_folder extracted
+Parameters:
+    images_fodler: folder where images are
+    database_filename: database filename. The file will be named <database_filename>.csv
+Returns:
+    a pandas dataframe containing the database generated
+"""
+def generateDatabase(images_folder='handDatabase', database_filename=None):
+    files = os.listdir(images_folder)
+    try:
+        files.remove('notWorking')
+    except:
+        pass
+
+    df = pd.DataFrame(columns=indexes)
+    for f, i in zip(files, range(len(files))):
+        df.loc[i] = processImage(images_folder +'/' + f)
+        print('file {0}:{1} done'.format(i,f))
+    if database_filename:
+        #guaranteed to have .csv extension
+        database_filename.replace('.csv','')
+        df.to_csv(database_filename + '.csv')
+    return df
+    

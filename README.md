@@ -21,7 +21,7 @@ A biometria é um mecanismo de identificação mais seguro, ao utilizar caracter
 A utilização de dispositivos mais acessíveis, como smartphones, torna possível que usuários que não tem acesso à sensores altamente especializados desenvolvam sistemas de segurança biométricos modestos. Ainda, a utilização de imagens das mãos é menos intrusiva que outros métodos, como capturas de íris, causando menos desconforto aos usuários. Portanto, neste projeto, foi desenvolvido um sistema de identificação biométrica com base em 20 características extraídas de fotos das mãos, capturadas de smartphones.
 
 ## Conjunto de Dados
-A base de dados utilizada consiste em 21 imagens das mãos de 7 indivíduos. As fotos foram capturadas com o smartphone Xiaomi Redmi Note 5A, que possui uma câmera de 13 Megapixels. Para evitar ruídos, as fotos foram feitas com um tecido preto no plano de fundo.
+A base de dados utilizada consiste em 20 imagens das mãos de 7 indivíduos. As fotos foram capturadas com o smartphone Xiaomi Redmi Note 5A, que possui uma câmera de 13 Megapixels. Para evitar ruídos, as fotos foram feitas com um tecido preto no plano de fundo.
 
 As imagens estão disponíveis na pasta [handDatabase](handDatabase/). Cada imagem está no formato:
 ```
@@ -100,17 +100,17 @@ Cada dedo gera quatro atributos: um de comprimento, e três de largura. Para ext
 ### Comparação
 Os atributos de todas as imagens foram carregados em um *dataframe* do Pandas e armazenados em um arquivo csv. Para minimizar os efeitos de diferença de ângulos nas fotos, todos os valores foram normalizados pelo comprimento da mão. Assim, todos os atributos (com excessão do comprimento da mão) possuem valores sempre menores que 1.
 
-Como métrica de distância entre os documentos, utilizamos a distância euclidiana. As comparações são feitas documento à documento, e o 
+Como métrica de distância entre os documentos, utilizamos a distância euclidiana. As comparações são feitas documento à documento, e o limiar escolhido para dizer se um *match* deve ser feito ou não é de 0.0378, média dos valores de similaridade encontrados quando uma classificação sem restrição por limiar está correta.
 
 ### Resultados
 
-Para avaliar o sistema, realizamos o teste um a um entre todos os documentos, para verificar se uma imagem era mais similar à outra imagem da mesma pessoa. O resultado foi de 14 acertos e 
+Para avaliar o sistema, realizamos o teste um a um entre todos os documentos, para verificar se uma imagem era mais similar à outra imagem da mesma pessoa. O resultado foi de 19 acertos e 1 erro (95% de acurácia).
 
 #### Discussão
 
 Os sistema de extração de atributos não funcionou da forma como esperávamos. Não encontramos boas referÊncia sobre como segmentar as imagens das mãos, o que nos levou a desenvolver um algoritmo muito dependente das fotos de entrada. Caso o braço do usuário na foto estivesse presente em grande parte, o sistema não conseguiria excluir o braço. Algumas imagens tinham outros dedos excluídos ao invés dos dedões. Ainda, boa parte das fotos estavam foram dos padrões esperados pelo algoritmo, então não obtivemos a base de dados necessária para realizar uma avaliação completa do sistema.
 
-Os resultados obtidos pela avaliação foram razoavelmente bons, na casa dos 66%. Porém, existe um grande potencial para melhoria, com um sistema que extraia métricas mais robustas, ou com o uso de técnicas de biometria multimodal.
+Os resultados obtidos pela avaliação foram muito bons. Porém, o conjunto de dados testado é muito pequeno, o que impossibilita crer que esse resultado seria garantido numa aplicação real. Ainda, não foram feitas avaliações mais profundas, como a taxa de rejeição quando o usuário é verdadeiro, por exemplo, pois o sistema reconheceu todas as 20 imagens. É necessário obter mais imagens para avaliar a efcácia deste projeto.
 
 Como nota dos autores, infelizmente tivemos muitas dificuldades em encontrar formas de segmentar as imagens de maneira satisfatória e a compreensão do OpenCV também tomou muito tempo. Gostariamos de ter investido mais tempo na criação de um dataset mais robusto e numa análise dos resultados mais completa.
 

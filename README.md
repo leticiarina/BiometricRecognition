@@ -106,7 +106,7 @@ Como métrica de distância entre os documentos, utilizamos a distância euclidi
 
 Para avaliar o sistema, realizamos o teste um a um entre todos os documentos, para verificar se uma imagem era mais similar à outra imagem da mesma pessoa. O resultado foi de 14 acertos e 
 
-##Discussão
+#### Discussão
 
 Os sistema de extração de atributos não funcionou da forma como esperávamos. Não encontramos boas referÊncia sobre como segmentar as imagens das mãos, o que nos levou a desenvolver um algoritmo muito dependente das fotos de entrada. Caso o braço do usuário na foto estivesse presente em grande parte, o sistema não conseguiria excluir o braço. Algumas imagens tinham outros dedos excluídos ao invés dos dedões. Ainda, boa parte das fotos estavam foram dos padrões esperados pelo algoritmo, então não obtivemos a base de dados necessária para realizar uma avaliação completa do sistema.
 

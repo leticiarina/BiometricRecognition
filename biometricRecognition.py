@@ -280,7 +280,9 @@ def isolateFingers(fingers_mask):
         
         # Changes rotation angle so fingers are always on horizontal.
         # This code might be wrong, need to check corner cases
-        rot = rect[2] if rect[2] > -45 else rect[2] + 90 
+        rot = rect[2]
+        if (rect[1][0] > rect[1][1]):
+            rot = 90 + rot
         rotation_matrix = cv2.getRotationMatrix2D(rect[0], rot, 1.0)
         
         # Applies rotation to mask and image
